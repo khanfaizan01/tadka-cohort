@@ -1,0 +1,104 @@
+# Tadka — Java food delivery platform
+# PostgreSQL 16 only. Day 5/6/8/13 services are placeholders.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tadka-postgres
+    ports:
+      # Placeholder: Day 1 only needs the internal port;
+      # the actual host binding lives in docker-compose.override.yml (dev)
+      # or docker-compose.prod.yml (production).
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: tadka
+      POSTGRES_PASSWORD: tadka_local
+      POSTGRES_DB: tadka
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tadka"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+# ── Day 5: Read replica ──────────────────────────────────────────────
+# services:
+#   postgres-replica:
+#     image: postgres:16-alpine
+#     container_name: tadka-postgres-replica
+#     ports:
+#       - "5433:5432"
+#     environment:
+#       POSTGRES_USER: tadka
+#       POSTGRES_PASSWORD: tadka_local
+#       POSTGRES_DB: tadka
+#     volumes:
+#       - pgdata-replica:/var/lib/postgresql/data
+#     restart: unless-stopped
+
+# ── Day 6: Redis ─────────────────────────────────────────────────────
+# services:
+#   redis:
+#     image: redis:7-alpine
+#     container_name: tadka-redis
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redisdata:/data
+#     restart: unless-stopped
+
+# ── Day 8: Kafka + Zookeeper ─────────────────────────────────────────
+# services:
+#   zookeeper:
+#     image: confluentinc/cp-zookeeper:7.5.0
+#     container_name: tadka-zookeeper
+#     environment:
+#       ZOOKEEPER_CLIENT_PORT: 2181
+#     ports:
+#       - "2181:2181"
+#     restart: unless-stopped
+#   kafka:
+#     image: confluentinc/cp-kafka:7.5.0
+#     container_name: tadka-kafka
+#     depends_on:
+#       - zookeeper
+#     environment:
+#       KAFKA_BROKER_ID: 1
+#       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+#       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#     ports:
+#       - "9092:9092"
+#     restart: unless-stopped
+
+# ── Day 13: Prometheus + Grafana ─────────────────────────────────────
+# services:
+#   prometheus:
+#     image: prom/prometheus:latest
+#     container_name: tadka-prometheus
+#     ports:
+#       - "9090:9090"
+#     volumes:
+#       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+#     restart: unless-stopped
+#   grafana:
+#     image: grafana/grafana:latest
+#     container_name: tadka-grafana
+#     depends_on:
+#       - prometheus
+#     ports:
+#       - "3000:3000"
+#     restart: unless-stopped
+
+volumes:
+  pgdata:
+
+# ── Day 5: Read replica volume ───────────────────────────────────────
+# volumes:
+#   pgdata-replica:
+
+# ── Day 6: Redis volume ──────────────────────────────────────────────
+# volumes:
+#   redisdata:

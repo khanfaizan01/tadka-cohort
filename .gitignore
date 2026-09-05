@@ -1,0 +1,26 @@
+# Java / Maven
+target/
+!.mvn/
+pom.xml
+
+# IDE
+*.iml
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+*.class
+*.jar
+*.war
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.claude/settings.local.json
