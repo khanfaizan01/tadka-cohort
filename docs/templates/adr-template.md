@@ -1,58 +1,21 @@
-# ADR-NNN: Title Here
+# ADR-NNN: [Short Title]
 
 **Date:** YYYY-MM-DD
+**Status:** Proposed | Accepted | Deprecated | Superseded
+**Deciders:** [who was involved]
 
-**Status:** Proposed | Accepted | Superseded | Deprecated | Rejected
+Same seven fields as the board. English in the file. Fill every field; "Revisit when" is not optional.
 
-**Deciders:** Name(s) or team
+**Topic:** What are we deciding?
 
-## Context
+**Options:** What did we consider? (3–5 real options, none strawmanned)
 
-Describe the context or problem statement. What is the decision about? What constraints, forces, or pressures are at play?
+**Choice:** What did we pick?
 
-## Decision
+**Why:** Why this one?
 
-State the decision clearly and concisely. What is being chosen?
+**Trade-off:** What does it cost (rupees, ops, reversibility)?
 
-## Consequences
+**Failure mode:** How does this go wrong at 2am?
 
-### Positive
-
-- List the beneficial outcomes and advantages of this decision
-- How does this improve the system, team, or product?
-
-### Negative
-
-- List the drawbacks, trade-offs, and costs
-- What is being sacrificed or made harder?
-
-### Risks
-
-- What could go wrong? What are the failure modes?
-- What mitigations exist or are needed?
-
-## Alternatives Considered
-
-### Option A: [Alternative Name]
-
-- **Pros:** List the advantages
-- **Cons:** List the disadvantages
-- **Why rejected:** Explain why this alternative was not chosen
-
-### Option B: [Alternative Name]
-
-- **Pros:** List the advantages
-- **Cons:** List the disadvantages
-- **Why rejected:** Explain why this alternative was not chosen
-
-## References
-
-- Link to related ADRs, documents, or external resources
-
-## Revisit When
-
-Under what conditions should this ADR be revisited? Examples:
-- Team size changes beyond a threshold
-- A measurable performance bottleneck is identified
-- A new technology becomes available that changes the trade-offs
-- An external requirement (SLA, compliance) forces a change
+**Revisit when:** Under what conditions do we open this again? (A number, a failure, a team size — not "a new blog post".)

@@ -1,8 +1,14 @@
+-- Tadka Day 1–3: Schema creation and tables (ADR-003, ADR-008)
+-- Five schemas in a single PostgreSQL 16 instance.
+-- No cross-schema foreign keys (ADR-008). All cross-domain references use UUIDs.
+
 CREATE SCHEMA IF NOT EXISTS identity;
 CREATE SCHEMA IF NOT EXISTS restaurant;
 CREATE SCHEMA IF NOT EXISTS ordering;
 CREATE SCHEMA IF NOT EXISTS delivery;
 CREATE SCHEMA IF NOT EXISTS payment;
+
+-- ── identity schema ────────────────────────────────────────────────────────
 
 CREATE TABLE identity.users (
     id UUID PRIMARY KEY,
@@ -12,6 +18,8 @@ CREATE TABLE identity.users (
     role VARCHAR(20) NOT NULL,
     created_at TIMESTAMP NOT NULL
 );
+
+CREATE UNIQUE INDEX idx_users_email ON identity.users(email);
 
 CREATE TABLE identity.user_addresses (
     id UUID PRIMARY KEY,
@@ -27,7 +35,7 @@ CREATE TABLE identity.user_addresses (
     CONSTRAINT fk_user_addresses_user FOREIGN KEY (user_id) REFERENCES identity.users(id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX idx_users_email ON identity.users(email);
+-- ── restaurant schema ──────────────────────────────────────────────────────
 
 CREATE TABLE restaurant.restaurants (
     id UUID PRIMARY KEY,
@@ -56,6 +64,8 @@ CREATE TABLE restaurant.menu_items (
     CONSTRAINT fk_menu_items_restaurant FOREIGN KEY (restaurant_id) REFERENCES restaurant.restaurants(id) ON DELETE CASCADE
 );
 
+-- ── ordering schema ────────────────────────────────────────────────────────
+
 CREATE TABLE ordering.orders (
     id UUID PRIMARY KEY,
     customer_id UUID NOT NULL,
@@ -70,9 +80,7 @@ CREATE TABLE ordering.orders (
     delivery_address_latitude DOUBLE PRECISION,
     delivery_address_longitude DOUBLE PRECISION,
     created_at TIMESTAMP NOT NULL,
-    delivered_at TIMESTAMP,
-    CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES identity.users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_orders_restaurant FOREIGN KEY (restaurant_id) REFERENCES restaurant.restaurants(id) ON DELETE CASCADE
+    delivered_at TIMESTAMP
 );
 
 CREATE TABLE ordering.order_items (
@@ -86,6 +94,8 @@ CREATE TABLE ordering.order_items (
     special_instructions VARCHAR,
     CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES ordering.orders(id) ON DELETE CASCADE
 );
+
+-- ── delivery schema ────────────────────────────────────────────────────────
 
 CREATE TABLE delivery.delivery_agents (
     id UUID PRIMARY KEY,
@@ -103,10 +113,10 @@ CREATE TABLE delivery.delivery_assignments (
     status VARCHAR(20) NOT NULL,
     assigned_at TIMESTAMP NOT NULL,
     picked_up_at TIMESTAMP,
-    delivered_at TIMESTAMP,
-    CONSTRAINT fk_delivery_assignments_order FOREIGN KEY (order_id) REFERENCES ordering.orders(id) ON DELETE CASCADE,
-    CONSTRAINT fk_delivery_assignments_agent FOREIGN KEY (agent_id) REFERENCES delivery.delivery_agents(id) ON DELETE CASCADE
+    delivered_at TIMESTAMP
 );
+
+-- ── payment schema ─────────────────────────────────────────────────────────
 
 CREATE TABLE payment.payments (
     id UUID PRIMARY KEY,
@@ -117,6 +127,5 @@ CREATE TABLE payment.payments (
     status VARCHAR(20) NOT NULL,
     gateway_reference VARCHAR,
     created_at TIMESTAMP NOT NULL,
-    completed_at TIMESTAMP,
-    CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES ordering.orders(id) ON DELETE CASCADE
+    completed_at TIMESTAMP
 );

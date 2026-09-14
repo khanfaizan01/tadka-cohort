@@ -1,5 +1,6 @@
 package com.tadka.domain.restaurants;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tadka.domain.valueobjects.Money;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -45,5 +46,6 @@ public class MenuItem {
 
     @ManyToOne
     @JoinColumn(name = "restaurant_id", nullable = false)
+    @JsonIgnore
     private Restaurant restaurant;
 }

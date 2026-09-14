@@ -1,5 +1,6 @@
 package com.tadka.domain.orders;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tadka.domain.valueobjects.Money;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
+    @JsonIgnore
     private Order order;
 
     @Column(name = "menu_item_id", nullable = false)
