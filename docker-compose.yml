@@ -6,9 +6,6 @@ services:
     image: postgres:16-alpine
     container_name: tadka-postgres
     ports:
-      # Placeholder: Day 1 only needs the internal port;
-      # the actual host binding lives in docker-compose.override.yml (dev)
-      # or docker-compose.prod.yml (production).
       - "5432:5432"
     environment:
       POSTGRES_USER: tadka
@@ -23,7 +20,7 @@ services:
       retries: 5
     restart: unless-stopped
 
-# ── Day 5: Read replica ──────────────────────────────────────────────
+# ── Day 5: Read replica ──────────────────────────────────
 # services:
 #   postgres-replica:
 #     image: postgres:16-alpine
@@ -38,18 +35,17 @@ services:
 #       - pgdata-replica:/var/lib/postgresql/data
 #     restart: unless-stopped
 
-# ── Day 6: Redis ─────────────────────────────────────────────────────
-# services:
-#   redis:
-#     image: redis:7-alpine
-#     container_name: tadka-redis
-#     ports:
-#       - "6379:6379"
-#     volumes:
-#       - redisdata:/data
-#     restart: unless-stopped
+# ── Day 6: Redis ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: tadka-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
 
-# ── Day 8: Kafka + Zookeeper ─────────────────────────────────────────
+# ── Day 8: Kafka + Zookeeper ─────────────────────────────
 # services:
 #   zookeeper:
 #     image: confluentinc/cp-zookeeper:7.5.0
@@ -73,7 +69,7 @@ services:
 #       - "9092:9092"
 #     restart: unless-stopped
 
-# ── Day 13: Prometheus + Grafana ─────────────────────────────────────
+# ── Day 13: Prometheus + Grafana ─────────────────────────
 # services:
 #   prometheus:
 #     image: prom/prometheus:latest
@@ -94,11 +90,4 @@ services:
 
 volumes:
   pgdata:
-
-# ── Day 5: Read replica volume ───────────────────────────────────────
-# volumes:
-#   pgdata-replica:
-
-# ── Day 6: Redis volume ──────────────────────────────────────────────
-# volumes:
-#   redisdata:
+  redisdata:

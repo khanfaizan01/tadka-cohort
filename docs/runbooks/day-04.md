@@ -56,7 +56,7 @@ mvn spring-boot:run
 
 If `volume rm` says "no such volume", ignore it. If it says "volume is in use", `docker rm -f tadka-postgres` again, then `volume rm`.
 
-**Look for:** tests **7/7**. Migrations `InitialDomainModel`, `OrderLifecycleAndDemoSeed`, `Day04Hardening` (and `Day04CouponLocking` — not taught live). Listen **5224**. Docker Desktop must be running (Testcontainers).
+**Look for:** tests pass. Migrations `InitialDomainModel`, `OrderLifecycleAndDemoSeed`, `Day04Hardening` (and `Day04CouponLocking` — not taught live). Listen **5224**. Docker Desktop must be running (Testcontainers).
 
 ## 1. Body file
 

@@ -1,14 +1,76 @@
-# Tadka — Student runbooks
+# Tadka — Student Runbooks (Day 1 → Day 6)
 
-Copy-paste guides to run and verify **this branch's** code. Each day ships the runbook for that day (and earlier days as history).
+Hands-on, copy-paste guides to **run, demo, and verify each day's code yourself**. One file per day; each reflects that day's branch state (the system grows as you go — Day 3 has no cache/replica yet, Day 5 adds the replica, Day 6 adds Redis). Every architectural move is *earned by a failure you can reproduce* — these runbooks show you how.
 
-| Day | What you run | Runbook |
-|-----|----------------|---------|
-| 1 | Scaffold + liveness `/health`; ADR-001/002 | [day-01.md](day-01.md) |
-| 2 | Domain model + 5 Postgres schemas; `/health/ready`; ADR-003/008 | [day-02.md](day-02.md) |
-| 3 | REST `/api/v1`, server-side pricing, RFC 7807, seed, idempotency demo | [day-03.md](day-03.md) |
-| 4 | `Idempotency-Key`, `xmin` → 409, in-process domain events | [day-04.md](day-04.md) |
+| Day | What you build & verify | Runbook |
+|----|----|----|
+| 1 | Scaffold + `/health`; Copilot setup | [day-01.md](day-01.md) |
+| 2 | Domain model + schema-per-domain (5 schemas, migration) | [day-02.md](day-02.md) |
+| 3 | Full REST API `/api/v1` (14 endpoints), server-side pricing, state machine, RFC 7807 errors | [day-03.md](day-03.md) |
+| 4 | Hardening: idempotency, optimistic concurrency (409), domain events; integration tests | [day-04.md](day-04.md) |
+| 5 | Scaling: indexes (EXPLAIN), connection pool, streaming **read replica** + load test | [day-05.md](day-05.md) |
+| 6 | **Redis** cache-aside + stampede lock + invalidation, and **SSE live tracking** over a Redis backplane | [day-06.md](day-06.md) · CLI walkthrough [redis-cli.md](../database/redis-cli.md) · gym [redis-cli-playground](../../toydemo/day-06-cache-realtime/redis-cli-playground/index.html) |
 
-Later days add their own file here when that day's code exists.
+> Consolidated demo index (issue → fix → trade-off → captured numbers): the instructor pack's `cohort-prep/DEMOS.md`.
 
-**Windows:** use `curl.exe`, not `curl`. New to Compose? [docs/learn/](../learn/README.md).
+---
+
+## Prerequisites (install once)
+
+- **Git**, **Java 21**, **Maven 3.9.16** (`mvn --version`), **Docker Desktop** (running).
+- **Optional:** an HTTP GUI (the app ships **Swagger** at `http://localhost:5224/swagger-ui.html`), `k6` (Day 5 load test — `winget install GrafanaLabs.k6`), `psql`/`redis-cli` (or just use `docker exec`).
+
+## One-time setup
+
+```bash
+git clone <tadka-repo-url> tadka-cohort
+cd tadka-cohort
+```
+
+Each day is a **branch**. Switch to the day you're working on:
+
+```bash
+git checkout day-03      # day-01 … day-06
+```
+
+## The shape of every day
+
+```bash
+docker compose up -d                      # start infra (Postgres; +replica Day 5; +Redis Day 6)
+mvn clean package -DskipTests -q          # build the jar
+java -jar target\tadka-api-0.0.1-SNAPSHOT.jar   # migrates, seeds, starts the API
+# → app on http://localhost:5224
+mvn test                                  # from Day 4 on, runs the test suite (needs Docker for Testcontainers)
+```
+
+Stop the app with `Ctrl+C`. Reset the database completely with `docker compose down -v` (wipes volumes) then `up -d`.
+
+## Connection facts (same every day)
+
+| Thing | Value |
+|---|---|
+| API (http) | `http://localhost:5224` |
+| API docs (Swagger) | `http://localhost:5224/swagger-ui.html` |
+| Postgres (primary) | `localhost:5432`, db `tadka`, user `tadka`, pass `tadka_local` |
+| Postgres replica (Day 5+) | `localhost:5433` |
+| Redis (Day 6+) | `localhost:6379` |
+
+## Seed data (created automatically on first run)
+
+| Entity | Id | Note |
+|---|---|---|
+| Restaurant — Meghana Foods | `a1b2c3d4-0001-4000-8000-000000000001` | 6 menu items |
+| Menu item — Chicken Biryani (Meghana) | `b1b2c3d4-0001-4000-8000-000000000001` | ₹299 |
+| Customer — Priya Sharma | `c1b2c3d4-0001-4000-8000-000000000001` | use as `customerId` |
+
+## ⚠️ Windows PowerShell + curl
+
+In **Windows PowerShell**, `curl` is an alias for `Invoke-WebRequest`. Use **`curl.exe`**. Quote `"@docs/runbooks/place-order.json"`. Do not paste `-d "{...}"`.
+
+## Common gotchas
+
+- **First `/health` is slow** (~500–800 ms): Spring context refresh + HikariCP warm-up. Hit it again for the real (single-digit ms) number.
+- **`docker compose up` says a container name is in use:** `docker rm -f <name>` then `up -d`, or `docker compose down` first.
+- **Port already in use (5224/5432):** stop the previous `java -jar` / container.
+- **Migrations** run automatically at startup against the **primary**; you don't run `mvn flyway` yourself.
+- **JAVA_HOME not set for Maven:** set to the embedded JRE: `C:\Users\khanf\.vscode\extensions\redhat.java-1.55.0-win32-x64\jre\21.0.11-win32-x86_64`.

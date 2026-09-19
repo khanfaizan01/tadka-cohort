@@ -5,6 +5,7 @@ import com.tadka.domain.valueobjects.Money;
 import com.tadka.domain.common.IDomainEvent;
 import com.tadka.domain.common.Result;
 import com.tadka.domain.orders.Events.OrderConfirmedEvent;
+import com.tadka.domain.orders.Events.OrderStatusChangedEvent;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -109,6 +110,8 @@ public class Order {
                 "Cannot transition from '" + status + "' to '" + nextStatus + "'. Allowed: " + allowed);
         }
         this.status = nextStatus;
+        // Every successful transition raises an OrderStatusChangedEvent for live tracking (ADR-020).
+        raise(new OrderStatusChangedEvent(id, status));
         if (nextStatus == OrderStatus.CONFIRMED) {
             this.confirmedAt = LocalDateTime.now();
             raise(new OrderConfirmedEvent(id, customerId));

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redis CLI Playground</title>
+    <style>
+        body { font-family: monospace; max-width: 800px; margin: 20px auto; }
+        textarea { width: 100%; height: 100px; font-family: monospace; }
+        .output { background: #1e1e1e; color: #00ff00; padding: 10px; border-radius: 5px; }
+        .command { color: #ff6600; }
+    </style>
+</head>
+<body>
+    <h1>Redis CLI Playground</h1>
+    <p>Type Redis commands to explore the cache, tracking, and rate-limiting data.</p>
+    <textarea id="cmd" placeholder="e.g. KEYS order:*"></textarea>
+    <button onclick="runCmd()">Execute</button>
+    <div class="output" id="output"></div>
+    <script>
+        async function runCmd() {
+            const cmd = document.getElementById('cmd').value.trim();
+            if (!cmd) return;
+            const out = document.getElementById('output');
+            out.innerHTML += `<div class="command">> ${cmd}</div>`;
+            try {
+                // In a real implementation, this would call a backend proxy
+                // For now, show instructions
+                out.innerHTML += `<div>Run via: redis-cli ${cmd}</div>`;
+            } catch(e) {
+                out.innerHTML += `<div>Error: ${e}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -3,6 +3,8 @@ package com.tadka.controller;
 import com.tadka.controller.dto.*;
 import com.tadka.domain.common.ResultT;
 import com.tadka.domain.orders.Order;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import com.tadka.domain.orders.OrderFactory;
 import com.tadka.domain.orders.OrderStatus;
 import com.tadka.domain.valueobjects.Address;
@@ -26,7 +28,7 @@ public class OrdersController {
     }
 
     @PostMapping
-    public ResponseEntity<OrderResponse> create(
+    public ResponseEntity<?> create(
             @Valid @RequestBody PlaceOrderRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
@@ -46,7 +48,12 @@ public class OrdersController {
             request.getCustomerId(), request.getRestaurantId(), items, address, idempotencyKey);
 
         if (result.isFailure()) {
-            return ResponseEntity.status(422).body(null);
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("error", "ORDER_CANNOT_BE_PLACED");
+            body.put("detail", result.getError());
+            body.put("status", 422);
+            body.put("timestamp", java.time.LocalDateTime.now().toString());
+            return ResponseEntity.status(422).body(body);
         }
 
         Order order = result.getValue();

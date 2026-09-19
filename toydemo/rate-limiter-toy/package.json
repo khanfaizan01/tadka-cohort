@@ -1,0 +1,1 @@
+{"name": "rate-limiter-toy", "version": "1.0.0", "description": "Day 6 rate limiting demo", "main": "server.js", "scripts": {"start": "node server.js", "load": "node load-client.js"}, "dependencies": {"express": "^4.18.2", "axios": "^1.6.0"}}

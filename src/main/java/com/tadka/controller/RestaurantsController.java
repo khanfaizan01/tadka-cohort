@@ -1,13 +1,16 @@
 package com.tadka.controller;
 
 import com.tadka.controller.dto.*;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.tadka.domain.restaurants.MenuItem;
 import com.tadka.domain.restaurants.Restaurant;
 import com.tadka.domain.valueobjects.Money;
+import com.tadka.infrastructure.caching.ICacheService;
 import com.tadka.service.RestaurantService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,9 +19,16 @@ import java.util.UUID;
 public class RestaurantsController {
 
     private final RestaurantService restaurantService;
+    private final ICacheService cacheService;
+    private static final Duration MENU_TTL = Duration.ofSeconds(60);
 
-    public RestaurantsController(RestaurantService restaurantService) {
+    public RestaurantsController(RestaurantService restaurantService, ICacheService cacheService) {
         this.restaurantService = restaurantService;
+        this.cacheService = cacheService;
+    }
+
+    private static String menuCacheKey(UUID restaurantId) {
+        return "restaurant:" + restaurantId + ":menu";
     }
 
     @GetMapping
@@ -53,7 +63,17 @@ public class RestaurantsController {
             @PathVariable UUID id,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Boolean vegOnly) {
-        return ResponseEntity.ok(restaurantService.getMenu(id, category, vegOnly));
+        String cacheKey = menuCacheKey(id);
+        List<MenuItem> allItems = cacheService.getOrSet(cacheKey, new TypeReference<List<MenuItem>>() {},
+            () -> restaurantService.getByIdWithMenu(id).getMenu(), MENU_TTL);
+        if (allItems == null) {
+            return ResponseEntity.notFound().build();
+        }
+        List<MenuItem> items = allItems.stream()
+            .filter(i -> category == null || i.getCategory().equalsIgnoreCase(category))
+            .filter(i -> vegOnly == null || !vegOnly || i.getIsVeg())
+            .toList();
+        return ResponseEntity.ok(items);
     }
 
     @PatchMapping("/{id}/menu/{itemId}/availability")
@@ -62,6 +82,7 @@ public class RestaurantsController {
             @PathVariable UUID itemId,
             @Valid @RequestBody UpdateAvailabilityRequest request) {
         restaurantService.updateMenuItemAvailability(id, itemId, request.getIsAvailable());
+        cacheService.invalidate(menuCacheKey(id)); // delete-on-write (ADR-018)
         return ResponseEntity.ok().build();
     }
 

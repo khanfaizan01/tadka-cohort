@@ -5,6 +5,7 @@ import com.tadka.domain.common.IDomainEventHandler;
 import com.tadka.domain.common.IDomainEventDispatcher;
 import com.tadka.domain.orders.Events.OrderConfirmedEvent;
 import com.tadka.domain.orders.Events.OrderPlacedEvent;
+import com.tadka.domain.orders.Events.OrderStatusChangedEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -42,6 +43,8 @@ public class DomainEventDispatcher implements IDomainEventDispatcher {
             ((IDomainEventHandler<OrderPlacedEvent>) handler).handle(e);
         } else if (event instanceof OrderConfirmedEvent e) {
             ((IDomainEventHandler<OrderConfirmedEvent>) handler).handle(e);
+        } else if (event instanceof OrderStatusChangedEvent e) {
+            ((IDomainEventHandler<OrderStatusChangedEvent>) handler).handle(e);
         }
         // Add more event types here as they grow
     }

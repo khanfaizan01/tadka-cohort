@@ -2,11 +2,11 @@
 
 **Branch:** `day-02` · **What's new:** five bounded contexts in `domain/`, one Postgres **schema** each, `InitialDomainModel` Flyway migration on startup, **ADR-003** and **ADR-008**. Day 1's liveness `/health` plus the `/health/ready` probe are already in the controller.
 
-> **Windows PowerShell:** use **`curl.exe`**. From the repo root.
+> **Windows PowerShell:** use **`curl.exe`**. From the repo root. Quote `@file` so PowerShell does not splat the path.
 
 | Thing | Value |
 |-------|--------|
-| API (http) | `http://localhost:8080` |
+| API (http) | `http://localhost:5224` |
 | Compose service | `postgres` (container `tadka-postgres`) |
 | Postgres | `localhost:5432`, db `tadka`, user `tadka`, password `tadka_local` |
 
@@ -14,29 +14,10 @@ Compose cheat sheet: [`docs/learn/docker.md`](../learn/docker.md).
 
 ---
 
-## 0. What the tree should look like
+## 0. Fresh start
 
 ```bash
 git checkout day-02
-mvn compile
-```
-
-**Look for**
-
-- Build: **0 errors, 0 warnings**.
-- Two modules only: the API and the tests.
-- `domain/{orders,restaurants,delivery,identity,payment}` have **classes**, plus `domain/common/` for `Result`, `ResultT`, `DomainException`, `DomainEvent`, `DomainEventDispatcher`, and `domain/valueobjects/` (`Money`, `Address`, `GeoLocation`).
-- Folder `identity` vs schema `identity` — intentional (Day 2 teaches that).
-- No `k6/`, `terraform/`, extra `src/` services.
-- `GET /health` is liveness; `GET /health/ready` hits the DB via `DataSource`.
-
----
-
-## 1. Fresh Postgres (the `-v` matters)
-
-A volume left over from Day 1 (or a previous Day 2 boot) makes Flyway throw **`duplicate table`** or **`relation already exists`**.
-
-```bash
 docker compose down -v
 docker compose up -d
 docker compose ps
@@ -49,54 +30,64 @@ docker exec tadka-postgres pg_isready -U tadka
 # → localhost:5432 - accepting connections
 ```
 
+**What you look for in the tree:**
+
+- Build: **0 errors, 0 warnings**.
+- Two modules only: the API and the tests.
+- `domain/{orders,restaurants,delivery,identity,payment}` have **classes**, plus `domain/common/` for `Result`, `ResultT`, `DomainException`, `DomainEvent`, `DomainEventDispatcher`, and `domain/valueobjects/` (`Money`, `Address`, `GeoLocation`).
+- Folder `identity` vs schema `identity` — intentional (Day 2 teaches that).
+- No `k6/`, `terraform/`, extra `src/` services.
+- `GET /health` is liveness; `GET /health/ready` hits the DB via `DataSource`.
+
 ---
 
-## 2. Run the API (migration on startup)
+## 1. Run the API (migration on startup)
 
 Keep this terminal open.
 
 ```bash
-mvn spring-boot:run
+mvn clean package -DskipTests -q
+java -jar target\tadka-api-0.0.1-SNAPSHOT.jar
 ```
 
 **Look for**
 
 - `Migrating Flyway migration: V__InitialDomainModel.sql` or `Applying migration 'V__InitialDomainModel'` (first boot on a fresh volume)
-- `Tomcat started on port(s): 8080 (http)`
+- `Tomcat started on port(s): 5224 (http)`
 
 There are still **no** `/api/v1` endpoints. That is Day 3.
 
 ---
 
-## 3. Liveness vs readiness
+## 2. Liveness vs readiness
 
 Second terminal, repo root:
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:5224/health
 ```
 
 **Look for — HTTP 200**, **no** `database` field:
 
 ```json
-{ "status": "Healthy", "timestamp": "..." }
+{"status":"UP"}
 ```
 
 ```bash
-curl http://localhost:8080/health/ready
+curl http://localhost:5224/health/ready
 ```
 
 **Look for — HTTP 200**
 
 ```json
-{ "status": "Healthy", "database": "Connected", "responseTimeMs": 3, "timestamp": "..." }
+{"status":"healthy","database":"Connected","responseTimeMs":3,"timestamp":"..."}
 ```
 
-First ready hit after `mvn spring-boot:run` is often **500–800 ms**. Hit it again for single-digit ms.
+First ready hit after `java -jar` is often **500–800 ms**. Hit it again for single-digit ms.
 
 ---
 
-## 4. The payoff — five schemas
+## 3. The payoff — five schemas
 
 ```bash
 docker exec tadka-postgres psql -U tadka -d tadka -c "\dn"
@@ -121,6 +112,20 @@ docker exec tadka-postgres psql -U tadka -d tadka -c "\dt payment.*"
 | `delivery` | `delivery_agents`, `delivery_assignments` |
 | `identity` | `users`, `user_addresses` |
 | `payment` | `payments` |
+
+---
+
+## 4. Verify seed data
+
+```bash
+docker exec tadka-postgres psql -U tadka -d tadka -c "SELECT name, is_active FROM restaurant.restaurants;"
+# → Meghana Foods | Truffles | Vidyarthi Bhavan
+
+docker exec tadka-postgres psql -U tadka -d tadka -c "SELECT count(*) FROM restaurant.menu_items;"   # 16
+
+# Value objects are embedded columns (no separate table) — e.g. a menu item's Money (price + currency):
+docker exec tadka-postgres psql -U tadka -d tadka -c "SELECT name, price, currency FROM restaurant.menu_items LIMIT 3;"
+```
 
 ---
 
@@ -164,8 +169,8 @@ docker exec tadka-postgres psql -U tadka -d tadka -c "\d ordering.order_items"
 
 ```bash
 docker compose stop postgres
-curl http://localhost:8080/health/ready
-curl http://localhost:8080/health
+curl http://localhost:5224/health/ready
+curl http://localhost:5224/health
 ```
 
 **Look for:** ready **503** / `"Disconnected"`; `/health` still **200**.
@@ -174,7 +179,7 @@ curl http://localhost:8080/health
 docker compose start postgres
 docker compose ps
 # wait until healthy, then:
-curl http://localhost:8080/health/ready
+curl http://localhost:5224/health/ready
 ```
 
 ---
@@ -185,8 +190,8 @@ Open in the editor:
 
 - `domain/orders/Order.java` — aggregate root; `customerId` / `restaurantId` are `UUID`
 - `domain/common/Result.java`, `ResultT.java` — domain result wrappers
-- `domain/ValueObjects/Money.java` — `@Embeddable`, immutable, `{ amount, currency }`
-- `infrastructure/.../TadkaDataSourceConfig.java` or `application.yml` — schema-per-datasource config
+- `domain/valueobjects/Money.java` — `@Embeddable`, immutable, `{ amount, currency }`
+- `infrastructure/.../TadkaDataSourceConfig.java` or `application.properties` — schema-per-datasource config
 - `docs/adrs/003-schema-per-domain.md` and `008-no-cross-schema-fks.md`
 
 ---
@@ -212,7 +217,7 @@ docker exec tadka-postgres psql -U tadka -d tadka -c "\d ordering.orders"
 - [ ] `GET /health/ready` → 200, `"Connected"`.
 - [ ] `\dn` shows the five domain schemas.
 - [ ] `ordering.orders` has no FK to `identity` or `restaurant`.
-- [ ] You can point at a value object stored as columns, not a table.
+- [ ] You can point to a value object stored as columns, not a table.
 - [ ] `xmin` column exists on `ordering.orders`.
 
 ---
@@ -221,11 +226,11 @@ docker exec tadka-postgres psql -U tadka -d tadka -c "\d ordering.orders"
 
 | Symptom | What to do |
 |---------|------------|
-| `relation already exists` on migrate | `docker compose down -v && docker compose up -d`, then `mvn spring-boot:run` again. |
+| `relation already exists` on migrate | `docker compose down -v && docker compose up -d`, then `java -jar target\*.jar` again. |
 | `/health/ready` 404 | You are on Day 1 code, or the API was not rebuilt. This branch must have `ready()`. |
 | `/health` already returns `database` | Old controller. Day 2 splits liveness and readiness. |
 | `psql` role `postgres` does not exist | User is **`tadka`**, database **`tadka`**. |
-| Port 8080 in use | Stop the other `mvn spring-boot:run`. |
+| Port 5224 in use | Stop the other `java -jar`. |
 | `curl` HTML / method error | Use `curl.exe` on PowerShell. |
 | Flyway fails with "duplicate table" | Volume was not reset (`-v` missing). `docker compose down -v && docker compose up -d`. |
 

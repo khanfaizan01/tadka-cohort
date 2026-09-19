@@ -1,0 +1,1 @@
+{"name": "hot-key-stampede-toy", "version": "1.0.0", "description": "Day 6 cache stampede demo", "main": "index.js", "scripts": {"start": "node index.js"}, "dependencies": {"express": "^4.18.2", "axios": "^1.6.0"}}
